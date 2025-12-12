@@ -36,34 +36,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ambil'])) {
     $payment_method = $_POST['payment_method'] ?? 'Tunai';
     $card_number = isset($_POST['card_number']) ? preg_replace('/\s+/', '', trim($_POST['card_number'])) : null;
 
-    $check = $mysqli->query("SHOW TABLES LIKE 'tickets'");
+    $check = $mysqli->query("SHOW TABLES LIKE 'tickets_new'");
     if ($check->num_rows == 0) {
-        die("<b>❌ Error:</b> Tabel <code>tickets</code> belum ada di database.");
+        die("<b>❌ Error:</b> Tabel <code>tickets_new</code> belum ada di database.");
     }
 
     // Ambil ID terakhir untuk kode
-    $res = $mysqli->query("SELECT MAX(id) as mx FROM tickets");
+    $res = $mysqli->query("SELECT MAX(id) as mx FROM tickets_new");
     $row = $res ? $res->fetch_assoc() : ['mx' => 0];
     $next = intval($row['mx']) + 1;
     $code = 'B-' . str_pad($next, 3, '0', STR_PAD_LEFT);
 
     // Simpan tiket baru
-    $stmt = $mysqli->prepare("INSERT INTO tickets (code, name, film_id, payment_method, card_number, status) VALUES (?, ?, ?, ?, ?, 'waiting')");
+    $stmt = $mysqli->prepare("INSERT INTO tickets_new (code, name, film_id, payment_method, card_number, status) VALUES (?, ?, ?, ?, ?, 'waiting')");
     $stmt->bind_param('ssiss', $code, $name, $film_id, $payment_method, $card_number);
     $stmt->execute();
     $ticket_id = $stmt->insert_id;
 
     // Ambil data tiket untuk ditampilkan
-    $ticket_info = $mysqli->query("SELECT * FROM tickets WHERE id=$ticket_id")->fetch_assoc();
+    $ticket_info = $mysqli->query("SELECT * FROM tickets_new WHERE id=$ticket_id")->fetch_assoc();
 }
 
 // --- ANTRIAN SAAT INI ---
-$current = $mysqli->query("SELECT code FROM tickets WHERE status='serving' ORDER BY id DESC LIMIT 1");
+$current = $mysqli->query("SELECT code FROM tickets_new WHERE status='serving' ORDER BY id DESC LIMIT 1");
 $current_code = ($current && $current->num_rows > 0) ? $current->fetch_assoc()['code'] : 'B-XXX';
 
 // --- JUMLAH MENUNGGU ---
 $waiting = 0;
-$wait_query = $mysqli->query("SELECT COUNT(*) as cnt FROM tickets WHERE status='waiting'");
+$wait_query = $mysqli->query("SELECT COUNT(*) as cnt FROM tickets_new WHERE status='waiting'");
 if ($wait_query && $wait_query->num_rows > 0) {
     $waiting = $wait_query->fetch_assoc()['cnt'];
 }
